@@ -245,7 +245,6 @@ ModelManifest.xml
 *.pth
 output/
 data/
-dataset/
 lightning_logs/
 example/init_result
 logs/

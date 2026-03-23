@@ -1,41 +1,24 @@
 #!/bin/bash
-# Auto-detect environment: Kaggle vs local
+# All parameters read from environment variables with sensible local defaults.
+# On Kaggle, export env vars in the notebook before calling this script.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-if [ -d "/kaggle/input" ]; then
-    # Kaggle environment
-    DATA_ROOT="/kaggle/input/stereo-smallbaseline"
-    TRAIN_CSV="${DATA_ROOT}/train.csv"
-    VAL_CSV="${DATA_ROOT}/val.csv"
-    BATCH_SIZE=32
-    BATCH_SIZE_VAL=16
-    NUM_WORKERS=8
-else
-    # Local environment
-    DATA_ROOT="data"
-    TRAIN_CSV="data/processed_data/train.csv"
-    VAL_CSV="data/processed_data/val.csv"
-    BATCH_SIZE=1
-    BATCH_SIZE_VAL=1
-    NUM_WORKERS=4
-fi
-
 python3 train.py \
-  --exp_name hitnet_custom \
-  --model HITNet_SF \
-  --data_augmentation 1 \
+  --exp_name "${EXP_NAME:-hitnet_custom}" \
+  --model "${MODEL:-HITNet_SF}" \
+  --data_augmentation "${DATA_AUG:-1}" \
   --data_type_train depth \
-  --data_root_train "$DATA_ROOT" \
-  --data_list_train "$TRAIN_CSV" \
-  --data_size_train 640 480 \
+  --data_root_train "${DATA_ROOT:-data}" \
+  --data_list_train "${TRAIN_CSV:-data/processed_data/train.csv}" \
+  --data_size_train ${DATA_SIZE_H:-640} ${DATA_SIZE_W:-480} \
   --data_type_val depth \
-  --data_root_val "$DATA_ROOT" \
-  --data_list_val "$VAL_CSV" \
-  --data_size_val 640 480 \
-  --batch_size "$BATCH_SIZE" \
-  --batch_size_val "$BATCH_SIZE_VAL" \
-  --num_workers "$NUM_WORKERS" \
-  --lr 1e-3 \
-  --max_disp 160 \
-  --max_epochs 100
+  --data_root_val "${DATA_ROOT:-data}" \
+  --data_list_val "${VAL_CSV:-data/processed_data/val.csv}" \
+  --data_size_val ${DATA_SIZE_H:-640} ${DATA_SIZE_W:-480} \
+  --batch_size "${BATCH_SIZE:-1}" \
+  --batch_size_val "${BATCH_SIZE_VAL:-1}" \
+  --num_workers "${NUM_WORKERS:-4}" \
+  --lr "${LR:-1e-3}" \
+  --max_disp "${MAX_DISP:-160}" \
+  --max_epochs "${MAX_EPOCHS:-100}"

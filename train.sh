@@ -1,0 +1,18 @@
+python3 train.py \
+  --exp_name hitnet_custom \
+  --model HITNet_SF \
+  --data_augmentation 1 \
+  --data_type_train depth \
+  --data_root_train data \
+  --data_list_train data/processed_data/train.csv \
+  --data_size_train 640 480 \
+  --data_type_val depth \
+  --data_root_val data \
+  --data_list_val data/processed_data/val.csv \
+  --data_size_val 640 480 \
+  --batch_size 1 \
+  --batch_size_val 1  \
+  --num_workers 4 \
+  --lr 1e-3 \
+  --max_disp 160 \
+  --max_epochs 100

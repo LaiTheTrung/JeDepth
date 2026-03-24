@@ -62,7 +62,7 @@ Please check [README for datasets preparation](bridgedepth/dataloader/README).
 
 ## Weights (on Huggingface)
 
-Please check the [link](https://huggingface.co/MemorySlices/WAFT-Stereo/tree/main). We recommend using the checkpoints in the 'SynLarge' folder for downstream applications due to their strong sim-to-real generalization. Several of our main results and demos are based on these checkpoints. For more details, please refer to the paper.
+Please check the [link](https://huggingface.co/MemorySlices/WAFT-Stereo/tree/main). We recommend using the checkpoints in the `SynLarge` folder for downstream applications due to their strong sim-to-real generalization. Several of our main results and demos are based on these checkpoints. For more details, please refer to the paper.
 
 ## Training
 
@@ -76,7 +76,7 @@ python main.py --num-gpus 8 --config-file configs/SynLarge/DAv2L-5.yaml
 python main.py --num-gpus 1 --eval-only --config-file configs/eval/kitti2015.yaml --ckpt ckpts/SynLarge/DAv2L-5.pth
 ```
 
-Validation metrics are computed through `bridgedepth.utils.eval_disp`.
+Validation metrics are computed through [eval_disp](bridgedepth/utils/eval_disp.py).
 
 ## Submissions
 
@@ -86,7 +86,7 @@ python submission.py --config-file configs/eval/eth3d.yaml --ckpt ckpts/SynLarge
 
 ## Profiling
 
-Use `profiler.py` to inspect parameter count, forward MACs, and memory usage:
+Use [`profiler.py`](profiler.py) to inspect parameter count, forward MACs, and memory usage:
 
 ```bash
 python profiler.py --config-file configs/SynLarge/DAv2L-5.yaml

@@ -14,9 +14,13 @@ import logging
 import cv2
 import numpy as np
 import open3d as o3d
+from peft import PeftModel
 from algorithms.waft import WAFT
 from bridgedepth.utils import visualization
 from visualize import vis_heatmap, get_heatmap
+
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters())
 
 def depth2xyzmap(depth: np.ndarray, K, uvs: np.array=None, zmin=0.1):
     invalid_mask = (depth < zmin)
@@ -86,6 +90,10 @@ if __name__=="__main__":
     checkpoint = torch.load(args.ckpt, map_location='cpu', weights_only=False)
     weights = checkpoint['model'] if 'model' in checkpoint else checkpoint
     model.load_state_dict(weights, strict=False)
+    for name, module in model.named_modules():
+        if isinstance(module, PeftModel):
+            print(f"{name} is a PeftModel with {count_parameters(module)} trainable parameters.")
+            module.merge_and_unload()
 
     img0 = imageio.imread(f"{args.dir}/left.png")
     img1 = imageio.imread(f"{args.dir}/right.png")

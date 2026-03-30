@@ -1,15 +1,15 @@
 # WAFT-Stereo
 
-<!-- [[Paper](https://arxiv.org/abs/2506.21526v2)] -->
+[[Paper](https://arxiv.org/abs/2603.24836)]
 
   We introduce WAFT-Stereo, a simple and effective warping-based algorithm for stereo matching. WAFT-Stereo demonstrates that cost volumes, a common design used in many leading methods, are not necessary for strong performance. WAFT-Stereo ranks first on ETH3D, KITTI and Middlebury public benchmarks, reducing the zero-shot error by 81\% on ETH3D benchmark, while being 1.8-6.7x faster than competitive methods.
 
 ![demo](assets/Concat.gif)
 
-<!-- If you find WAFT-Stereo useful for your work, please consider citing our academic paper:
+If you find WAFT-Stereo useful for your work, please consider citing our academic paper:
 
 <h3 align="center">
-    <a href="https://arxiv.org/abs/2506.21526v2">
+    <a href="https://arxiv.org/abs/2603.24836">
         WAFT-Stereo: Warping-Alone Field Transforms for Stereo Matching
     </a>
 </h3>
@@ -19,13 +19,16 @@
 </p>
 
 ```
-@article{wang2025waft,
-  title={WAFT: Warping-Alone Field Transforms for Optical Flow},
-  author={Wang, Yihan and Deng, Jia},
-  journal={arXiv preprint arXiv:2506.21526},
-  year={2025}
+@misc{wang2026waftstereowarpingalonefieldtransforms,
+      title={WAFT-Stereo: Warping-Alone Field Transforms for Stereo Matching}, 
+      author={Yihan Wang and Jia Deng},
+      year={2026},
+      eprint={2603.24836},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2603.24836}, 
 }
-``` -->
+```
 
 ## Installation
 
@@ -94,10 +97,12 @@ python profiler.py --config-file configs/SynLarge/DAv2L-5.yaml
 
 ## Visualization
 
-Qualitative visualization:
+Demos for custom stereo pairs, including disparity, uncertainty, and point cloud visualization. For high-resolution inputs (>1080p), we recommend downsampling the images by at least 2× for optimal performance.
+
+This code is largely adapted from [FoundationStereo](https://github.com/NVlabs/FoundationStereo/blob/master/scripts/run_demo.py). Users may also find it helpful to refer to the original repository for further details.
 
 ```bash
-python visualize.py --config-file configs/SynLarge/DAv2L-5.yaml
+python demo.py --config-file configs/SynLarge/DAv2L-5.yaml --ckpt ckpts/SynLarge/DAv2L-5.pth
 ```
 
 Dataset inspection:

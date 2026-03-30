@@ -16,6 +16,7 @@ import numpy as np
 import open3d as o3d
 from algorithms.waft import WAFT
 from bridgedepth.utils import visualization
+from visualize import vis_heatmap, get_heatmap
 
 def depth2xyzmap(depth: np.ndarray, K, uvs: np.array=None, zmin=0.1):
     invalid_mask = (depth < zmin)
@@ -64,12 +65,12 @@ def setup(args):
 if __name__=="__main__":
     code_dir = os.path.dirname(os.path.realpath(__file__))
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dir', default=f"{code_dir}/assets/keyboard", type=str, help='dir')
+    parser.add_argument('--dir', default=f"{code_dir}/assets/Keyboard", type=str, help='dir')
     parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
     parser.add_argument('--ckpt', default=None, type=str)
     parser.add_argument('--hiera', default=0, type=int, help='hierarchical inference (only needed for high-resolution images (>1K))')
     parser.add_argument('--z_far', default=10, type=float, help='max depth to clip in point cloud')
-    parser.add_argument('--get_pc', type=int, default=1, help='save point cloud output')
+    parser.add_argument('--get_pc', type=int, default=0, help='save point cloud output')
     parser.add_argument('--scale', default=1, type=float, help='downsize the image by scale, must be <=1')
     parser.add_argument('--remove_invisible', default=1, type=int, help='remove non-overlapping observations between left and right images from point cloud, so the remaining points are more reliable')
     parser.add_argument('--denoise_cloud', type=int, default=1, help='whether to denoise the point cloud')
@@ -92,7 +93,6 @@ if __name__=="__main__":
     img1 = cv2.resize(img1, fx=args.scale, fy=args.scale, dsize=None)
     H,W = img0.shape[:2]
     print(img0.shape, img1.shape)
-    # print(f"Input image size: {W}x{H}")
     input_sample = {
         "img1": torch.as_tensor(img0).cuda().float()[None].permute(0,3,1,2),
         "img2": torch.as_tensor(img1).cuda().float()[None].permute(0,3,1,2)
@@ -100,11 +100,15 @@ if __name__=="__main__":
     with torch.no_grad():
         results_dict = model(input_sample)
 
-    viz = visualization.Visualizer(img1)
+    viz = visualization.Visualizer(img0)
     disp = results_dict['disp_pred'].cpu().numpy().reshape(H, W)
     vis_disp = viz.draw_disparity(disp, colormap=cv2.COLORMAP_TURBO, enhance=False).get_image()
-    vis_disp = np.concatenate([img1, vis_disp], axis=1)
+    vis_disp = np.concatenate([img0, vis_disp], axis=1)
     imageio.imwrite(f'{args.dir}/vis_disp.png', vis_disp)
+
+    heatmap = get_heatmap(results_dict['delta_info_preds'][-1]).cpu().numpy()
+    vis_uncertainty = vis_heatmap(img0, heatmap)
+    cv2.imwrite(f"{args.dir}/uncertainty.png", vis_uncertainty)
 
     if args.remove_invisible:
         yy,xx = np.meshgrid(np.arange(disp.shape[0]), np.arange(disp.shape[1]), indexing='ij')
@@ -130,9 +134,9 @@ if __name__=="__main__":
         o3d.io.write_point_cloud(f'{args.dir}/cloud.ply', pcd)
         print(f"PCL saved to {args.dir}")
 
-    if args.denoise_cloud:
-        logging.info("[Optional step] denoise point cloud...")
-        cl, ind = pcd.remove_radius_outlier(nb_points=args.denoise_nb_points, radius=args.denoise_radius)
-        inlier_cloud = pcd.select_by_index(ind)
-        o3d.io.write_point_cloud(f'{args.dir}/cloud_denoise.ply', inlier_cloud)
-        pcd = inlier_cloud
+        if args.denoise_cloud:
+            logging.info("[Optional step] denoise point cloud...")
+            cl, ind = pcd.remove_radius_outlier(nb_points=args.denoise_nb_points, radius=args.denoise_radius)
+            inlier_cloud = pcd.select_by_index(ind)
+            o3d.io.write_point_cloud(f'{args.dir}/cloud_denoise.ply', inlier_cloud)
+            pcd = inlier_cloud

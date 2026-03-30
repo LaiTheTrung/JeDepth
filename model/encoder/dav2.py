@@ -22,7 +22,10 @@ class DAv2Encoder(nn.Module):
         super().__init__()
         self.model_name = model_name
         depth_anything = DepthAnythingV2(**DEPTH_ANYTHING_CONFIGS[model_name])
-        depth_anything.load_state_dict(torch.load(f'depth-anything-ckpts/depth_anything_v2_{model_name}.pth', map_location='cpu'))
+        if os.path.exists(f'depth-anything-ckpts/depth_anything_v2_{model_name}.pth'):
+            depth_anything.load_state_dict(torch.load(f'depth-anything-ckpts/depth_anything_v2_{model_name}.pth', map_location='cpu'))
+        else:
+            print(f"Warning: checkpoint for depth anything v2 {model_name} not found, using random weights.")
         self.dpt_configs = {
             'vitl': {'n_layers': 24, "dim": 1024},
             'vitb': {'n_layers': 12, "dim": 768},

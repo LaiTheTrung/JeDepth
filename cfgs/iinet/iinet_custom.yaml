@@ -31,7 +31,7 @@ MODEL:
     BACKBONE_PRETRAINED: pretrained/mobilenetv3_large_100.safetensors  # Local backbone weights (offline)
 
 OPTIMIZATION:
-    BATCH_SIZE: 16
+    BATCH_SIZE: 32
     AMP: true                   # Automatic Mixed Precision (giảm VRAM)
     NUM_EPOCHS: 50
 

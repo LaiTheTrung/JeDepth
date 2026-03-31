@@ -1,0 +1,24 @@
+{
+  "id": "laithetrung/train-depth-model",
+  "id_no": 112315736,
+  "title": "Train Depth Model",
+  "code_file": "train-depth-model.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "laithetrung/stereo-smallbaseline",
+    "laithetrung/jedepth-code"
+  ],
+  "kernel_sources": [
+    "laithetrung/hitnet-utility-script"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

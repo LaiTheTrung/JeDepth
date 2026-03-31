@@ -7,11 +7,19 @@ Dữ liệu tôi đã chuẩn bị có thể tìm hấy trong `data/processed_da
 ## Huấn luyện mô hình
 Mô hình sẽ được tôi custom lại trong `jedepth`. Huấn luyện và đánh giá dựa trên các metric trong `jedepth/evaluation/evaluation.py`.
 
-## Mục tiêu
+## Mục tiêu 1 (Hoàn thành)
 Hãy giúp tôi thực hiện:
 1. update lại code training và evaluation để phù hợp với dữ liệu của tôi. Sau mỗi 5 epoch huấn luyện, hãy đánh giá mô hình trên tập validation và lưu lại mô hình checkpoint. Quá trình huấn luyện sẽ được quản lý qua tensorboard.
 2. Tạo file train.py để huấn luyện mô hình.
 3. Tạo file train.sh với các lệnh/ parameters cần thiết để chạy huấn luyện.
+
+## Mục tiêu 2 
+Sau khi hoàn thành mục tiêu 1, tiếp theo tôi cần triển khai code trên kaggle để có thể huấn luyện mô hình trên đó.
+1. Update lại train.py, khi evaluation mỗi 5 epoch sẽ inference dữ liệu trong `test_images` và lưu kết quả trong tensorboard để có thể so sánh giữa các checkpoint và các mô hình khác trong tương lai.
+
+2. Cài đặt môi trường trên kaggle để có thể chạy được code của tôi, tham khảo thư mục `kaggle` gồm 2 môi trường `kaggle/training` chưa notebook để huấn luyện và `kaggle/utility` chứa các file cần thiết để cài đặt môi trường (lưu ý môi trường training không access được internet).
+
+3. Tiến hành huấn luyện và note lại quá trình huấn luyện mô hình ( stt, date, name, specification, result from type of metrics ... ) để có thể so sánh với các mô hình khác trong tương lai.
 
 ## Quy ước code:
 - Code sẽ được tổ chức thành các hàm và lớp rõ ràng, có chú thích đầy đủ để giải thích mục đích và cách sử dụng của từng phần.

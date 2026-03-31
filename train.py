@@ -8,6 +8,7 @@ Sử dụng:
 Tính năng:
     - Huấn luyện với AMP (Automatic Mixed Precision) tùy chọn
     - Đánh giá mỗi N epoch trên tập validation, lưu checkpoint
+    - Inference test images mỗi eval epoch → lưu visualization vào TensorBoard
     - Lưu best model dựa trên MAE metric
     - TensorBoard logging (loss, metrics, visualization)
     - tqdm progress bars cho epoch và iteration
@@ -20,6 +21,7 @@ import datetime
 import glob
 import random
 
+import cv2
 import numpy as np
 import torch
 import torch.nn as nn
@@ -28,6 +30,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from easydict import EasyDict
+import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -57,6 +60,8 @@ def parse_args():
                         help="Đường dẫn tới checkpoint để resume training")
     parser.add_argument("--gpu", type=int, default=0,
                         help="GPU device ID")
+    parser.add_argument("--test_images", type=str, default="test_images",
+                        help="Thư mục chứa test images (left/ và right/) để inference mỗi eval epoch")
     return parser.parse_args()
 
 
@@ -334,6 +339,120 @@ def manage_checkpoints(ckpt_dir, max_keep):
         os.remove(ckpt_list.pop(0))
 
 
+# ── Test Image Inference ─────────────────────────────────────────────────────
+
+def load_test_stereo_pairs(test_dir):
+    """Tìm và load tất cả stereo pairs từ test_images/left/ và test_images/right/.
+
+    Returns:
+        List of (name, left_path, right_path) tuples, sorted by name.
+    """
+    left_dir = os.path.join(test_dir, "left")
+    right_dir = os.path.join(test_dir, "right")
+    if not os.path.isdir(left_dir) or not os.path.isdir(right_dir):
+        return []
+
+    pairs = []
+    for fname in sorted(os.listdir(left_dir)):
+        left_path = os.path.join(left_dir, fname)
+        right_path = os.path.join(right_dir, fname)
+        if os.path.isfile(left_path) and os.path.isfile(right_path):
+            name = os.path.splitext(fname)[0]
+            pairs.append((name, left_path, right_path))
+    return pairs
+
+
+def prepare_test_image(img_path, device):
+    """Load ảnh, normalize ImageNet, pad về bội của 32. Trả về (tensor, original_hw)."""
+    img = cv2.imread(img_path)
+    if img is None:
+        raise FileNotFoundError(f"Cannot read: {img_path}")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # To tensor [0,1] + ImageNet normalization
+    tensor = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
+    tensor = (tensor - IMAGENET_MEAN.squeeze()) / IMAGENET_STD.squeeze()
+
+    # Pad to multiple of 32
+    _, h, w = tensor.shape
+    pad_h = (32 - h % 32) % 32
+    pad_w = (32 - w % 32) % 32
+    if pad_h > 0 or pad_w > 0:
+        tensor = F.pad(tensor, (0, pad_w, 0, pad_h), mode="constant", value=0)
+
+    return tensor.unsqueeze(0).to(device), (h, w)
+
+
+def disp_to_color(disp_np, max_disp=192):
+    """Chuyển disparity map (H,W) thành color image (H,W,3) dùng plasma colormap."""
+    disp_clipped = np.clip(disp_np, 0, max_disp)
+    normalized = disp_clipped / max_disp
+    cm = plt.get_cmap("plasma")
+    colored = cm(normalized)[:, :, :3]  # (H, W, 3) float [0,1]
+    return (colored * 255).astype(np.uint8)
+
+
+@torch.no_grad()
+def infer_test_images(model, test_dir, cfgs, device, epoch, logger, tb_writer):
+    """Inference trên test images và ghi kết quả visualization vào TensorBoard.
+
+    Mỗi test pair sẽ tạo 1 ảnh gồm: left image | predicted disparity (color).
+    Giúp so sánh chất lượng giữa các epoch và các mô hình khác nhau.
+    """
+    pairs = load_test_stereo_pairs(test_dir)
+    if not pairs:
+        logger.warning(f"No test image pairs found in {test_dir}")
+        return
+
+    model.eval()
+    disp_scale = cfgs.MODEL.DISP_SCALE
+    max_disp = cfgs.MODEL.MAX_DISP
+
+    logger.info(f"Inferring {len(pairs)} test image pairs...")
+
+    for name, left_path, right_path in pairs:
+        # Load và prepare
+        left_tensor, (orig_h, orig_w) = prepare_test_image(left_path, device)
+        right_tensor, _ = prepare_test_image(right_path, device)
+
+        data = {"left": left_tensor, "right": right_tensor}
+
+        # Inference
+        with torch.cuda.amp.autocast(enabled=cfgs.OPTIMIZATION.AMP):
+            output = model(data, only_uncer=cfgs.TRAINER.UNCER_ONLY)
+
+        # Lấy disparity prediction (scale về pixel space), crop về original size
+        if "disp_pred" in output:
+            disp_pred = output["disp_pred"].squeeze() * disp_scale
+        else:
+            disp_pred = output["coarse_disp"].squeeze() * disp_scale
+        disp_pred = disp_pred[:orig_h, :orig_w].cpu().numpy()
+
+        # Load original left image cho visualization
+        left_img = cv2.imread(left_path)
+        left_img = cv2.cvtColor(left_img, cv2.COLOR_BGR2RGB)
+
+        # Tạo color disparity map
+        disp_color = disp_to_color(disp_pred, max_disp=max_disp)
+
+        # Resize disp_color nếu cần (match left image size)
+        if disp_color.shape[:2] != left_img.shape[:2]:
+            disp_color = cv2.resize(disp_color, (left_img.shape[1], left_img.shape[0]))
+
+        # Ghép left image và disparity color thành 1 ảnh (side by side)
+        combined = np.concatenate([left_img, disp_color], axis=1)  # (H, 2W, 3)
+        combined_tensor = torch.from_numpy(combined).permute(2, 0, 1).float() / 255.0
+
+        # Ghi vào TensorBoard
+        if tb_writer is not None:
+            tb_writer.add_image(f"test_inference/{name}", combined_tensor, epoch)
+
+    if tb_writer is not None:
+        tb_writer.flush()
+
+    logger.info(f"Test inference complete. Results logged to TensorBoard (epoch {epoch})")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
@@ -494,6 +613,12 @@ def main():
                 model, val_loader, cfgs, device, epoch, logger, tb_writer,
             )
 
+            # Inference test images → lưu visualization vào TensorBoard
+            if os.path.isdir(args.test_images):
+                infer_test_images(
+                    model, args.test_images, cfgs, device, epoch, logger, tb_writer,
+                )
+
             # Lưu best model dựa trên MAE
             current_mae = metrics.get("MAE(px)", float("inf"))
             if current_mae < best_mae:
@@ -509,6 +634,41 @@ def main():
                             False, epoch, filename=ckpt_path)
             manage_checkpoints(ckpt_dir, cfgs.TRAINER.MAX_CKPT_SAVE_NUM)
             logger.info(f"Checkpoint saved: {ckpt_path}")
+
+    # ── Ghi kết quả vào experiments.csv ────────────────────────────────────
+    experiments_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "experiments.csv")
+    if should_eval and metrics and os.path.isfile(experiments_file):
+        import csv
+        # Đếm STT từ file hiện tại
+        with open(experiments_file, "r") as f:
+            stt = sum(1 for _ in f)  # header + existing rows → stt = row count
+
+        row = {
+            "stt": stt,
+            "date": datetime.datetime.now().strftime("%Y-%m-%d"),
+            "name": exp_name,
+            "model": cfgs.MODEL.NAME,
+            "batch_size": cfgs.OPTIMIZATION.BATCH_SIZE,
+            "epochs": num_epochs,
+            "lr": cfgs.OPTIMIZATION.OPTIMIZER.LR,
+            "scheduler": cfgs.OPTIMIZATION.SCHEDULER.NAME,
+            "crop_size": f"{crop_size[0]}x{crop_size[1]}",
+            "notes": f"UNCER_ONLY={cfgs.TRAINER.UNCER_ONLY}",
+            "MAE_px": f"{metrics.get('MAE(px)', -1):.4f}",
+            "RMSE_px": f"{metrics.get('RMSE(px)', -1):.4f}",
+            "D1_pct": f"{metrics.get('D1(%)', -1):.4f}",
+            "AbsRel": f"{metrics.get('AbsRel', -1):.4f}",
+            "delta_1.25": f"{metrics.get('δ<1.25x(%)', -1):.4f}",
+            "lt1px": f"{metrics.get('<1px(%)', -1):.4f}",
+            "lt3px": f"{metrics.get('<3px(%)', -1):.4f}",
+            "best_epoch": epoch if best_mae == metrics.get("MAE(px)", float("inf")) else "N/A",
+        }
+
+        with open(experiments_file, "a", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=row.keys())
+            writer.writerow(row)
+
+        logger.info(f"Experiment #{stt} logged to {experiments_file}")
 
     # ── Cleanup ──────────────────────────────────────────────────────────────
     tb_writer.close()

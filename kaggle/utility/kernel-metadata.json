@@ -1,0 +1,17 @@
+{
+  "id": "laithetrung/hitnet-utility-script",
+  "id_no": 113212326,
+  "title": "HITNet Utility Script",
+  "code_file": "hitnet_utility.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": false,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

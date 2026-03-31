@@ -9,6 +9,7 @@ DATA:
     ROOT: data/processed_data
     CROP_SIZE: [384, 512]       # [H, W] - crop size cho training và validation
     AUGMENT: true               # Bật augmentation cho tập train
+    TEST_IMAGES: test_images    # Thư mục chứa test stereo pairs (left/, right/)
 
 MODEL:
     NAME: JeDepth

@@ -1,0 +1,1 @@
+stt,date,name,model,batch_size,epochs,lr,scheduler,crop_size,notes,MAE_px,RMSE_px,D1_pct,AbsRel,delta_1.25,lt1px,lt3px,best_epoch

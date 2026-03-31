@@ -297,6 +297,13 @@ def eval_one_epoch(model, loader, cfgs, device, epoch, logger, tb_writer):
             disp_pred = model_output["coarse_disp"].squeeze(1) * disp_scale
 
         disp_gt = data["disp"].squeeze(1)  # (B, H, W)
+
+        # Upsample disp_pred nếu resolution khác disp_gt (xảy ra khi UNCER_ONLY=True)
+        if disp_pred.shape[-2:] != disp_gt.shape[-2:]:
+            disp_pred = F.interpolate(
+                disp_pred.unsqueeze(1), size=disp_gt.shape[-2:],
+                mode="bilinear", align_corners=False,
+            ).squeeze(1)
         mask = (disp_gt > 0) & (disp_gt < max_disp)
 
         # Tính metrics cho từng sample trong batch

@@ -28,6 +28,7 @@ MODEL:
     FIND_UNUSED_PARAMETERS: true
     CKPT: -1
     PRETRAINED_MODEL: ''
+    BACKBONE_PRETRAINED: pretrained/mobilenetv3_large_100.safetensors  # Local backbone weights (offline)
 
 OPTIMIZATION:
     BATCH_SIZE: 16

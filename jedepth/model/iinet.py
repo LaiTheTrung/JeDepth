@@ -67,17 +67,16 @@ class JeDepth(nn.Module):
 
         # init the matching encoder. resnet is fast and is the default for
         # results in the paper, fpn is more accurate but much slower.
+        # Load pretrained backbone weights từ local file nếu có (offline support cho Kaggle)
+        prefp = getattr(self.run_opts, 'BACKBONE_PRETRAINED', None) or None
+
         if "resnet" == self.run_opts.MATCHING_ENCODER_TYPE:
-            #prefp = opts.pre_weight_name
-            prefp = None
             self.matching_model = ResnetMatchingEncoder(18,
                                                         self.run_opts.MATCHING_FEATURE_DIMS,
                                                         self.run_opts.MATCHING_SCALE,
                                                         self.run_opts.MULTISCALE,
                                                         pretrainedfp=prefp)
         elif "unet" == self.run_opts.MATCHING_ENCODER_TYPE:
-            #prefp = opts.pre_weight_name
-            prefp = None
             self.matching_model = UnetMatchingEncoder(self.run_opts.MATCHING_FEATURE_DIMS,
                                                       self.run_opts.MATCHING_SCALE,
                                                       self.run_opts.MULTISCALE,

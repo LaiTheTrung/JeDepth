@@ -221,6 +221,12 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
             model_output = model(data, only_uncer=cfgs.TRAINER.UNCER_ONLY)
             loss, loss_info = model.get_loss(cfgs, data, model_output)
 
+        # Guard: skip batch nếu loss là NaN hoặc Inf
+        if not torch.isfinite(loss):
+            logger.warning(f"Epoch {epoch} Iter {i}: NaN/Inf loss detected, skipping batch")
+            optimizer.zero_grad()
+            continue
+
         # Backward pass với gradient scaling (AMP)
         scaler.scale(loss).backward()
         scaler.unscale_(optimizer)

@@ -19,8 +19,12 @@ class VolumeBiFocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, pt, target, weight):
-        loss = - weight * self.alpha * ((1 - pt) ** self.gamma) * (target * torch.log(pt)) - (1 - self.alpha) * (
-                        pt ** self.gamma) * ((1 - target) * torch.log(1 - pt))
+        # Clamp chặt hơn để tránh log(0) → NaN, đặc biệt với AMP (fp16)
+        pt = pt.clamp(min=1e-6, max=1 - 1e-6)
+        log_pt = torch.log(pt)
+        log_1mpt = torch.log(1 - pt)
+        loss = - weight * self.alpha * ((1 - pt) ** self.gamma) * (target * log_pt) - (1 - self.alpha) * (
+                        pt ** self.gamma) * ((1 - target) * log_1mpt)
         return loss
 
 class Criterion(nn.Module):
@@ -120,7 +124,9 @@ class Criterion(nn.Module):
         normals_gt = normals_gt.masked_fill(~normals_mask, 1.0)
 
         normals_dot_b1hw = (1.0 - (normals_pred * normals_gt).sum(dim=1)).unsqueeze(1)
-        normals_loss = normals_dot_b1hw.masked_select(final_mask).mean()
+        selected = normals_dot_b1hw.masked_select(final_mask)
+        # Guard: nếu không có valid pixel nào → trả 0 thay vì NaN
+        normals_loss = selected.mean() if selected.numel() > 0 else torch.tensor(0., device=normals_dot_b1hw.device)
 
         return normals_loss
 
@@ -152,7 +158,8 @@ class Criterion(nn.Module):
             validmask = torch.logical_and(disp_pred_grad.isfinite().all(dim=1, keepdim=True), validmask)
             grad_error = torch.abs(disp_pred_grad.masked_select(validmask) -
                                    disp_gt_grad.masked_select(validmask))
-            grad_loss[i] = torch.mean(grad_error)
+            # Guard: tensor rỗng → mean() = NaN
+            grad_loss[i] = torch.mean(grad_error) if grad_error.numel() > 0 else torch.tensor(0., device=disp_gt.device)
 
         return grad_loss
 
@@ -193,9 +200,10 @@ class Criterion(nn.Module):
         ns = len(cost_volume)
         klloss_weights = klloss_weights[3-ns:]
         bceloss_weights = bceloss_weights[3-ns:]
+        zero = torch.tensor(0., device=disp_gt.device)
         for i in range(len(cost_volume)):
-            pred_volume = torch.softmax(cost_volume[i], dim=1).clamp(min=1e-7)
-            sigmoid_volume = torch.sigmoid(cost_volume[i] * 2).clamp(min=1e-7, max=1-1e-7)
+            pred_volume = torch.softmax(cost_volume[i], dim=1).clamp(min=1e-6)
+            sigmoid_volume = torch.sigmoid(cost_volume[i] * 2).clamp(min=1e-6, max=1-1e-6)
             if i < ns - 1:
                 pred_index = output['hypos'][i]
                 gt_volume, mask_volume = gen_gt_volume(disp_gt, pred_index,scale=2 ** (4 - ns + i))
@@ -203,22 +211,28 @@ class Criterion(nn.Module):
                 gt_volume, mask_volume = gen_gt_volume(disp_gt, None, scale=2 ** (4 - ns + i))
 
             covered_mask = (gt_volume.sum(dim=1, keepdim=True) > 0).expand(-1, gt_volume.shape[1], -1, -1)
+
+            # Guard: skip nếu không có valid pixels (tránh mean() trên tensor rỗng → NaN)
+            if covered_mask.sum() == 0:
+                continue
+
             occ_hypos_count = mask_volume.sum(dim=1, keepdim=True).expand(-1, gt_volume.shape[1], -1, -1)
             edge_weight = occ_hypos_count
 
             est = torch.masked_select(pred_volume, covered_mask)
             gt = torch.masked_select(gt_volume, covered_mask) #b, d, h, w
-            tmp_loss = self.klloss(est.log(), gt)
+            # Clamp est trước khi log để tránh log(0)
+            tmp_loss = self.klloss(est.clamp(min=1e-6).log(), gt)
             edge_weight = torch.masked_select(edge_weight, covered_mask)
             # Apply edge weight
             tmp_loss = tmp_loss * edge_weight
             tmp_loss = klloss_weights[i]*tmp_loss
-            klloss += tmp_loss.mean()
+            klloss += tmp_loss.mean() if tmp_loss.numel() > 0 else zero
 
             tmp_loss = self.focal_loss(sigmoid_volume, mask_volume, gt_volume)
             tmp_loss = tmp_loss.masked_select(covered_mask)
             tmp_loss = bceloss_weights[i] * edge_weight * tmp_loss
-            bceloss += tmp_loss.mean()
+            bceloss += tmp_loss.mean() if tmp_loss.numel() > 0 else zero
 
         return klloss + bceloss
 

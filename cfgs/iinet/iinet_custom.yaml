@@ -32,7 +32,7 @@ MODEL:
 
 OPTIMIZATION:
     BATCH_SIZE: 32
-    AMP: true                   # Automatic Mixed Precision (giảm VRAM)
+    AMP: False                   # Automatic Mixed Precision (giảm VRAM)
     NUM_EPOCHS: 50
 
     OPTIMIZER:

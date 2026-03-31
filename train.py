@@ -13,6 +13,18 @@ Tính năng:
     - TensorBoard logging (loss, metrics, visualization)
     - tqdm progress bars cho epoch và iteration
 """
+import sys, os
+
+# Thêm utility packages vào path (cài sẵn từ jedepth-utility-script kernel)
+UTILITY_PATH = "/kaggle/input/notebooks/laithetrung/hitnet-utility-script"
+if os.path.exists(UTILITY_PATH):
+    sys.path.append(UTILITY_PATH)
+
+import torch
+print(f"PyTorch: {torch.__version__}")
+print(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
 
 import argparse
 import os
@@ -23,7 +35,7 @@ import random
 
 import cv2
 import numpy as np
-import torch
+
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader

@@ -7,13 +7,13 @@ DATA:
     TRAIN_CSV: data/processed_data/train.csv
     VAL_CSV: data/processed_data/val.csv
     ROOT: data/processed_data
-    CROP_SIZE: [384, 512]       # [H, W] - crop size cho training và validation
+    CROP_SIZE: [512, 512]       # [H, W] - crop size cho training và validation
     AUGMENT: true               # Bật augmentation cho tập train
     TEST_IMAGES: test_images    # Thư mục chứa test stereo pairs (left/, right/)
 
 MODEL:
     NAME: JeDepth
-    MAX_DISP: &max_disp 192
+    MAX_DISP: 192
     MATCHING_FEATURE_DIMS: 16
     CV_ENCODER_TYPE: multi_scale_encoder
     MATCHING_SCALE: 2
@@ -30,7 +30,7 @@ MODEL:
     PRETRAINED_MODEL: ''
 
 OPTIMIZATION:
-    BATCH_SIZE: 2
+    BATCH_SIZE: 16
     AMP: true                   # Automatic Mixed Precision (giảm VRAM)
     NUM_EPOCHS: 50
 

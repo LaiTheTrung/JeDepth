@@ -1,4 +1,4 @@
 OpenStereo
-data/processed_data
+data/stereo-smallbaseline
 output/*
 CLAUDE.md

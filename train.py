@@ -36,11 +36,9 @@ import random
 import cv2
 import numpy as np
 
-import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from tqdm import tqdm
 from easydict import EasyDict
 import matplotlib.pyplot as plt
 
@@ -207,11 +205,7 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
     total_loss = 0.0
     nan_count = 0
 
-    pbar = tqdm(enumerate(loader), total=len(loader),
-                desc=f"Train Epoch {epoch}/{total_epochs}",
-                dynamic_ncols=True, leave=False)
-
-    for i, data in pbar:
+    for i, data in enumerate(loader):
         global_step = epoch * len(loader) + i
         data = prepare_batch(data, cfgs, device)
 
@@ -235,15 +229,10 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
         scaler.update()
 
         total_loss += loss.item()
-        avg_loss = total_loss / (i + 1 - nan_count) if (i + 1 - nan_count) > 0 else 0
-        lr = optimizer.param_groups[0]["lr"]
-
-        # Update progress bar (thông tin realtime qua tqdm, không cần log riêng)
-        pbar.set_postfix(loss=f"{loss.item():.4f}", avg=f"{avg_loss:.4f}", lr=f"{lr:.2e}")
 
         # TensorBoard: ghi scalar mỗi LOG_INTERVAL iteration
         if i % cfgs.TRAINER.LOG_INTERVAL == 0 and tb_writer is not None:
-            loss_info["scalar/train/lr"] = lr
+            loss_info["scalar/train/lr"] = optimizer.param_groups[0]["lr"]
             write_tensorboard(tb_writer, loss_info, global_step)
 
     # Log 1 dòng tổng kết cuối epoch
@@ -269,10 +258,7 @@ def eval_one_epoch(model, loader, cfgs, device, epoch, logger, tb_writer):
     all_metrics = {}
     num_samples = 0
 
-    pbar = tqdm(enumerate(loader), total=len(loader),
-                desc=f"Eval  Epoch {epoch}", dynamic_ncols=True, leave=False)
-
-    for i, data in pbar:
+    for i, data in enumerate(loader):
         data = prepare_batch(data, cfgs, device)
 
         with torch.cuda.amp.autocast(enabled=cfgs.OPTIMIZATION.AMP):
@@ -601,18 +587,13 @@ def main():
     logger.info(f"Starting training: {num_epochs} epochs, eval every {eval_interval} epochs")
     logger.info(f"UNCER_ONLY: {cfgs.TRAINER.UNCER_ONLY}")
 
-    epoch_pbar = tqdm(range(start_epoch, num_epochs), desc="Training",
-                      dynamic_ncols=True)
-
-    for epoch in epoch_pbar:
-        epoch_pbar.set_description(f"Epoch {epoch}/{num_epochs}")
+    for epoch in range(start_epoch, num_epochs):
 
         # ── Train 1 epoch ────────────────────────────────────────────────────
         avg_loss = train_one_epoch(
             model, train_loader, optimizer, scaler, cfgs, device,
             epoch, num_epochs, logger, tb_writer,
         )
-        logger.info(f"Epoch {epoch} avg train loss: {avg_loss:.6f}")
 
         # Step scheduler (per-epoch)
         if sch_cfg.ON_EPOCH:

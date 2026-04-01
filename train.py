@@ -396,7 +396,7 @@ def prepare_test_image(img_path, device):
 
     # To tensor [0,1] + ImageNet normalization
     tensor = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
-    tensor = (tensor - IMAGENET_MEAN.squeeze()) / IMAGENET_STD.squeeze()
+    tensor = (tensor - IMAGENET_MEAN.view(3, 1, 1)) / IMAGENET_STD.view(3, 1, 1)
 
     # Pad to multiple of 32
     _, h, w = tensor.shape

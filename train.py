@@ -205,7 +205,7 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
     """Huấn luyện 1 epoch. Trả về average loss."""
     model.train()
     total_loss = 0.0
-    log_interval = cfgs.TRAINER.LOG_INTERVAL
+    nan_count = 0
 
     pbar = tqdm(enumerate(loader), total=len(loader),
                 desc=f"Train Epoch {epoch}/{total_epochs}",
@@ -223,7 +223,7 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
 
         # Guard: skip batch nếu loss là NaN hoặc Inf
         if not torch.isfinite(loss):
-            logger.warning(f"Epoch {epoch} Iter {i}: NaN/Inf loss detected, skipping batch")
+            nan_count += 1
             optimizer.zero_grad()
             continue
 
@@ -235,38 +235,27 @@ def train_one_epoch(model, loader, optimizer, scaler, cfgs, device, epoch,
         scaler.update()
 
         total_loss += loss.item()
-        avg_loss = total_loss / (i + 1)
+        avg_loss = total_loss / (i + 1 - nan_count) if (i + 1 - nan_count) > 0 else 0
         lr = optimizer.param_groups[0]["lr"]
 
-        # Update progress bar
+        # Update progress bar (thông tin realtime qua tqdm, không cần log riêng)
         pbar.set_postfix(loss=f"{loss.item():.4f}", avg=f"{avg_loss:.4f}", lr=f"{lr:.2e}")
 
-        # TensorBoard logging
-        if i % log_interval == 0 and tb_writer is not None:
+        # TensorBoard: ghi scalar mỗi LOG_INTERVAL iteration
+        if i % cfgs.TRAINER.LOG_INTERVAL == 0 and tb_writer is not None:
             loss_info["scalar/train/lr"] = lr
             write_tensorboard(tb_writer, loss_info, global_step)
 
-            # Visualization: stereo pair và disparity prediction
-            if cfgs.TRAINER.TRAIN_VISUALIZATION and "disp_pred" in model_output:
-                tb_info = {
-                    "image/train/stereo": torch.cat(
-                        [data["left"][0], data["right"][0]], dim=1
-                    ) / 256,
-                    "image/train/disp": color_map_tensorboard(
-                        data["disp"][0].squeeze(0),
-                        model_output["disp_pred"][0].squeeze(0) * cfgs.MODEL.DISP_SCALE,
-                    ),
-                }
-                write_tensorboard(tb_writer, tb_info, global_step)
+    # Log 1 dòng tổng kết cuối epoch
+    valid_iters = len(loader) - nan_count
+    avg_loss = total_loss / valid_iters if valid_iters > 0 else 0
+    lr = optimizer.param_groups[0]["lr"]
+    msg = f"Epoch {epoch}/{total_epochs} — avg_loss: {avg_loss:.6f}, lr: {lr:.4e}"
+    if nan_count > 0:
+        msg += f", nan_skipped: {nan_count}/{len(loader)}"
+    logger.info(msg)
 
-        # Log message
-        if i % log_interval == 0:
-            logger.info(
-                f"Epoch {epoch}/{total_epochs} Iter {i}/{len(loader)} "
-                f"Loss: {loss.item():.6f} ({avg_loss:.6f}) LR: {lr:.4e}"
-            )
-
-    return total_loss / len(loader)
+    return avg_loss
 
 
 @torch.no_grad()

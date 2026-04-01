@@ -19,8 +19,8 @@ class VolumeBiFocalLoss(nn.Module):
         self.gamma = gamma
 
     def forward(self, pt, target, weight):
-        # Clamp chặt hơn để tránh log(0) → NaN, đặc biệt với AMP (fp16)
-        pt = pt.clamp(min=1e-7, max=1 - 1e-7)
+        # Clamp an toàn cho fp16 (min positive normal ~6.1e-5)
+        pt = pt.float().clamp(min=1e-4, max=1 - 1e-4)
         log_pt = torch.log(pt)
         log_1mpt = torch.log(1 - pt)
         loss = - weight * self.alpha * ((1 - pt) ** self.gamma) * (target * log_pt) - (1 - self.alpha) * (
@@ -202,8 +202,8 @@ class Criterion(nn.Module):
         bceloss_weights = bceloss_weights[3-ns:]
         zero = torch.tensor(0., device=disp_gt.device)
         for i in range(len(cost_volume)):
-            pred_volume = torch.softmax(cost_volume[i], dim=1).clamp(min=1e-7)
-            sigmoid_volume = torch.sigmoid(cost_volume[i] * 2).clamp(min=1e-7, max=1-1e-7)
+            pred_volume = torch.softmax(cost_volume[i], dim=1).float().clamp(min=1e-4)
+            sigmoid_volume = torch.sigmoid(cost_volume[i] * 2).float().clamp(min=1e-4, max=1-1e-4)
             if i < ns - 1:
                 pred_index = output['hypos'][i]
                 gt_volume, mask_volume = gen_gt_volume(disp_gt, pred_index,scale=2 ** (4 - ns + i))
@@ -221,8 +221,8 @@ class Criterion(nn.Module):
 
             est = torch.masked_select(pred_volume, covered_mask)
             gt = torch.masked_select(gt_volume, covered_mask) #b, d, h, w
-            # Clamp est trước khi log để tránh log(0)
-            tmp_loss = self.klloss(est.clamp(min=1e-7).log(), gt)
+            # Clamp + cast float32 trước khi log để tránh log(0) trong fp16
+            tmp_loss = self.klloss(est.float().clamp(min=1e-4).log(), gt.float())
             edge_weight = torch.masked_select(edge_weight, covered_mask)
             # Apply edge weight
             tmp_loss = tmp_loss * edge_weight

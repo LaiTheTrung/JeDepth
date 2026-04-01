@@ -4,9 +4,9 @@
 # ============================================================================
 
 DATA:
-    TRAIN_CSV: data/processed_data/train.csv
-    VAL_CSV: data/processed_data/val.csv
-    ROOT: data/processed_data
+    TRAIN_CSV: data/stereo-smallbaseline/train.csv
+    VAL_CSV: data/stereo-smallbaseline/val.csv
+    ROOT: data/stereo-smallbaseline
     CROP_SIZE: [384, 512]       # [H, W] - crop size cho training và validation
     AUGMENT: False               # Bật augmentation cho tập train
     TEST_IMAGES: test_images    # Thư mục chứa test stereo pairs (left/, right/)
@@ -31,7 +31,7 @@ MODEL:
     BACKBONE_PRETRAINED: pretrained/mobilenetv3_large_100.safetensors  # Local backbone weights (offline)
 
 OPTIMIZATION:
-    BATCH_SIZE: 32
+    BATCH_SIZE: 2
     AMP: True                   # Automatic Mixed Precision (giảm VRAM)
     NUM_EPOCHS: 50
 

@@ -1,3 +1,14 @@
+#----- Thêm utility packages vào path (cần thiết khi chạy trên Kaggle) -----#
+UTILITY_PATH = "/kaggle/input/notebooks/laithetrung/hitnet-utility-script"
+if os.path.exists(UTILITY_PATH):
+    sys.path.append(UTILITY_PATH)
+
+import torch
+print(f"PyTorch: {torch.__version__}")
+print(f"CUDA available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
+# ------------------------Code starts here------------------------ #
 import logging
 import os
 import argparse
@@ -5,7 +16,6 @@ import sys
 import json
 import wandb
 
-import torch
 import copy
 
 from algorithms.waft import WAFT

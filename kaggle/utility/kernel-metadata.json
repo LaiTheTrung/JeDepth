@@ -1,0 +1,17 @@
+{
+  "id": "laithetrung/waft-utility",
+  "id_no": 114849522,
+  "title": "waft utility",
+  "code_file": "waft-utility.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "competition_sources": [],
+  "model_sources": []
+}

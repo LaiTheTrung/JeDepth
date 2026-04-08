@@ -1,0 +1,24 @@
+{
+  "id": "laithetrung/train-depth-model-waft",
+  "id_no": 114793750,
+  "title": "train depth model: Waft",
+  "code_file": "train-depth-model-waft.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "keywords": [],
+  "dataset_sources": [
+    "laithetrung/stereo-smallbaseline",
+    "laithetrung/jedepth-code"
+  ],
+  "kernel_sources": [
+    "laithetrung/waft-utility"
+  ],
+  "competition_sources": [
+    "nvidia-nemotron-model-reasoning-challenge"
+  ],
+  "model_sources": []
+}

@@ -1,0 +1,43 @@
+ALGORITHM: "waft"
+WAFT:
+  MAX_DISP: 256
+  LOSS: ['mixlap_40']
+  FEATURE_ENCODER:
+    TYPE: "dav2"
+    ARCH: "vits"
+    LORA_RANK: 8
+    LORA_ALPHA: 16
+  ITERATIVE_MODULE:
+    TASK: ['delta', 'delta', 'delta', 'delta']
+    DELTA_ITER:
+      TYPE: "vit"
+      ARCH: "vits"
+      PATCH_SIZE: 8
+    PROP_ITER:
+      TYPE: "vit"
+      ARCH: "vits"
+      PATCH_SIZE: 8
+DATASETS:
+  TRAIN_CSV: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data/stereo-smallbaseline/train.csv"
+  VAL_CSV: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data/stereo-smallbaseline/val.csv"
+  ROOT: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data"
+  CROP_SIZE: [384, 640]
+  DIVIS_BY: 16
+DATALOADER:
+  NUM_WORKERS: 4
+TEST:
+  EVAL_EPOCH_PERIOD: 5
+  TEST_IMAGES_DIR: "test_images"
+  EVAL_THRESH: (['1.0', '3.0'],)
+  EVAL_MAX_DISP: [null,]
+  EVAL_ONLY_VALID: (True,)
+SOLVER:
+  RESUME: ""
+  MIX_PRECISION: True
+  NO_RESUME_OPTIMIZER: True
+  IMS_PER_BATCH: 4
+  MAX_EPOCH: 100
+  MAX_ITER: 1000000
+  CHECKPOINT_PERIOD: 1000
+  LATEST_CHECKPOINT_PERIOD: 200
+  BASE_LR: 0.0002

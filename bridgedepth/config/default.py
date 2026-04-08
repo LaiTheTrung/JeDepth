@@ -76,6 +76,10 @@ _CN.DATASETS.YJITTER = False
 # Image size for training
 _CN.DATASETS.CROP_SIZE = [368, 784]
 _CN.DATASETS.DIVIS_BY = 16
+# Custom CSV-based dataset (stereo-smallbaseline)
+_CN.DATASETS.TRAIN_CSV = ""
+_CN.DATASETS.VAL_CSV = ""
+_CN.DATASETS.ROOT = "."
 
 # ---------------------------------------------------------------------------- #
 # Dataset and data augmentation
@@ -91,6 +95,8 @@ _CN.SOLVER = CN()
 
 _CN.SOLVER.MIX_PRECISION = False
 _CN.SOLVER.MAX_ITER = 300000
+# Epoch-based training (used by main.py custom loop). 0 → fall back to MAX_ITER.
+_CN.SOLVER.MAX_EPOCH = 0
 
 _CN.SOLVER.BASE_LR = 0.0005
 
@@ -130,6 +136,10 @@ _CN.TEST.EVAL_THRESH = [['1.0', '3.0']]
 _CN.TEST.EVAL_MAX_DISP = [1000]
 # Whether use only valid pixels in evaluation
 _CN.TEST.EVAL_ONLY_VALID = [True]
+# Epoch-based eval period (custom loop)
+_CN.TEST.EVAL_EPOCH_PERIOD = 5
+# Directory containing left/ + right/ images for qualitative inference logging
+_CN.TEST.TEST_IMAGES_DIR = ""
 
 # ---------------------------------------------------------------------------- #
 # Misc options

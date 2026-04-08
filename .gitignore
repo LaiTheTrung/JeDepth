@@ -20,4 +20,5 @@ datasets*
 # distribution / packaging
 build/
 dist/
+kaggle/update_code/
 *.egg-info/

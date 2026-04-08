@@ -1,12 +1,12 @@
-"""Utility script: cài đặt PyTorch + dependencies cho JeDepth training trên Kaggle (Blackwell GPU).
+"""Utility script: cài đặt PyTorch + dependencies cho WAFT-Stereo training trên Kaggle.
 
 Script này chạy trên kernel có internet, output sẽ được mount vào training kernel
-(không có internet) tại /kaggle/input/jedepth-utility-script/.
+(không có internet) tại /kaggle/input/waft-utility/.
 
-Packages cài vào /kaggle/working/ → trở thành output của kernel.
+Packages được cài vào /kaggle/working/ → trở thành output của kernel.
 """
-import subprocess
 import os
+import subprocess
 
 env = os.environ.copy()
 env["PYTHONPATH"] = f"/kaggle/working:{env.get('PYTHONPATH', '')}"
@@ -17,15 +17,17 @@ commands = [
     "uv pip install --target=/kaggle/working --system --pre torch torchvision torchaudio "
     "--index-url https://download.pytorch.org/whl/nightly/cu128",
 
-    # Depth training dependencies
+    # WAFT-Stereo dependencies
     "uv pip install --target=/kaggle/working --system "
-    "easydict opencv-python-headless matplotlib pandas tensorboard tqdm "
-    "kornia timm antialiased-cnns pyyaml",
+    "timm einops kornia antialiased-cnns peft transformers accelerate "
+    "tensorboard tqdm pyyaml yacs termcolor tabulate "
+    "opencv-python-headless pandas matplotlib "
+    "h5py imageio scipy Pillow",
 ]
 
 for cmd in commands:
     print(f"Running: {cmd[:80]}...")
     subprocess.run(cmd, shell=True, check=True, env=env)
 
-print("\nAll JeDepth dependencies installed successfully!")
-print("Output will be available at /kaggle/input/jedepth-utility-script/ in training kernel.")
+print("\nAll WAFT-Stereo dependencies installed successfully!")
+print("Output will be available at /kaggle/input/waft-utility/ in training kernel.")

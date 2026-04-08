@@ -1,5 +1,6 @@
 #----- Thêm utility packages vào path (cần thiết khi chạy trên Kaggle) -----#
-UTILITY_PATH = "/kaggle/input/notebooks/laithetrung/hitnet-utility-script"
+import os, sys
+UTILITY_PATH = "/kaggle/input/waft-utility/kaggle/working"
 if os.path.exists(UTILITY_PATH):
     sys.path.append(UTILITY_PATH)
 
@@ -14,19 +15,21 @@ import os
 import argparse
 import sys
 import json
-import wandb
-
 import copy
+
+from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from algorithms.waft import WAFT
 from bridgedepth.config import export_model_config
-from bridgedepth.dataloader import build_train_loader
+from bridgedepth.dataloader.depth_dataset import build_custom_loaders
 from bridgedepth.loss import build_criterion
 from bridgedepth.utils import misc
 import bridgedepth.utils.dist_utils as comm
 from bridgedepth.utils.logger import setup_logger
 from bridgedepth.utils.launch import launch
 from bridgedepth.utils.eval_disp import eval_disp
+from bridgedepth.utils.eval_custom import evaluate_model, infer_test_images
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -208,10 +211,10 @@ def main(args):
         eval_disp(model, cfg)
         return
 
-    num_params = sum(p.numel() for p in model_without_ddp.parameters())
     logger = logging.getLogger("waft")
     optimizer = build_optimizer(model_without_ddp, cfg)
     criterion = build_criterion(cfg)
+    device = torch.device("cuda")
 
     # resume checkpoints
     start_epoch = 0
@@ -229,114 +232,106 @@ def main(args):
             start_epoch = checkpoint['epoch']
             start_step = checkpoint['step']
 
-    # training dataset
-    train_loader, train_sampler = build_train_loader(cfg)
+    # training dataset (custom CSV-based)
+    train_loader, val_loader, train_sampler = build_custom_loaders(cfg)
+
+    max_epoch = cfg.SOLVER.MAX_EPOCH if cfg.SOLVER.MAX_EPOCH > 0 else 100
+    total_iters = max_epoch * len(train_loader)
 
     # training scheduler
-    last_epoch = start_step if resume and start_step > 0 else -1
+    last_epoch = start_step - 1 if resume and start_step > 0 else -1
     lr_scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer, cfg.SOLVER.BASE_LR,
-        cfg.SOLVER.MAX_ITER + 100,
+        total_iters + 100,
         pct_start=0.05,
         cycle_momentum=False,
         anneal_strategy='linear',
-        # anneal_strategy='cos',
         last_epoch=last_epoch
     )
 
+    writer = None
     if comm.is_main_process():
-        avg_dict = {}
-        data_name = args.config_file.split('/')[-2]
-        exp_name = args.config_file.split('/')[-1].split('.')[0] + f"-{args.seed}"
-        wandb.init(
-            project=data_name,
-            name=exp_name,
-        )
+        tb_dir = os.path.join(args.checkpoint_dir, "tb")
+        misc.check_path(tb_dir)
+        writer = SummaryWriter(tb_dir)
+        logger.info(f"TensorBoard logs → {tb_dir}")
 
     total_steps = start_step
-    epoch = start_epoch
-    logger.info('Start training')
+    logger.info(f'Start training: {max_epoch} epochs, {len(train_loader)} iters/epoch, total {total_iters}')
 
     print_freq = 20
-    while total_steps < cfg.SOLVER.MAX_ITER:
+    avg_dict = {}
+    for epoch in range(start_epoch, max_epoch):
         model.train()
-        # manual change random seed for shuffling every epoch
-        if comm.get_world_size() > 1:
+        if comm.get_world_size() > 1 and train_sampler is not None:
             train_sampler.set_epoch(epoch)
-            if hasattr(train_loader.dataset, "set_epoch"):
-                train_loader.dataset.set_epoch(epoch)
 
-        header = 'Epoch: [{}]'.format(epoch)
-        for i_batch, sample in enumerate(train_loader):
-            sample = {k: v.to(torch.device("cuda")) for k, v in sample.items()}
+        pbar = tqdm(train_loader, desc=f"epoch {epoch}", disable=not comm.is_main_process())
+        for sample in pbar:
+            sample = {k: v.to(device) for k, v in sample.items()}
 
-            # use bf16 for mix-precision training
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16, enabled=cfg.SOLVER.MIX_PRECISION):
                 result_dict = model(sample)
                 loss_dict, metrics = criterion(result_dict, sample, log=True)
                 weight_dict = criterion.weight_dict
                 losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
 
-            # more efficient zero_grad
             for param in model_without_ddp.parameters():
                 param.grad = None
-
             losses.backward()
-
-            # Gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.SOLVER.GRAD_CLIP)
-
             optimizer.step()
             lr_scheduler.step()
 
-            if comm.is_main_process():
-                if sample["valid"].sum() > 0:
-                    for k, v in metrics.items():
-                        avg_params = avg_dict.get(k, AverageMeter())
-                        avg_params.update(v)
-                        avg_dict[k] = avg_params
+            if comm.is_main_process() and sample["valid"].sum() > 0:
+                for k, v in metrics.items():
+                    meter = avg_dict.get(k, AverageMeter())
+                    meter.update(float(v))
+                    avg_dict[k] = meter
 
             total_steps += 1
 
-            if total_steps % 100 == 0:
-                if comm.is_main_process():
-                    wandb_log_dict = {f"train/{k}": v.avg for k, v in avg_dict.items()}
-                    wandb.log(wandb_log_dict)
-                    avg_dict = {}
+            if total_steps % print_freq == 0 and comm.is_main_process():
+                for k, meter in avg_dict.items():
+                    writer.add_scalar(f"train/{k}", meter.avg, total_steps)
+                writer.add_scalar("train/lr", lr_scheduler.get_last_lr()[0], total_steps)
+                pbar.set_postfix({k: f"{m.avg:.3f}" for k, m in avg_dict.items()})
+                avg_dict = {}
 
-            if total_steps % cfg.SOLVER.CHECKPOINT_PERIOD == 0 or total_steps == cfg.SOLVER.MAX_ITER:
-                if comm.is_main_process():
-                    checkpoint_path = os.path.join(args.checkpoint_dir, 'step_%06d.pth' % total_steps)
-                    torch.save({
-                        'model': model_without_ddp.state_dict(),
-                        'model_config': export_model_config(cfg),
-                    }, checkpoint_path)
+        # ── End of epoch: eval + checkpoint ──
+        is_eval_epoch = ((epoch + 1) % cfg.TEST.EVAL_EPOCH_PERIOD == 0) or (epoch + 1 == max_epoch)
+        if is_eval_epoch:
+            logger.info(f'Validation @ epoch {epoch + 1}')
+            results = evaluate_model(model, val_loader, cfg, device)
+            if comm.is_main_process():
+                for k, v in results.items():
+                    writer.add_scalar(f"val/{k}", v, total_steps)
+                logger.info("val: " + " | ".join(f"{k}={v:.4f}" for k, v in results.items()))
+                infer_test_images(model, cfg, writer, total_steps, device)
 
-            if total_steps % cfg.SOLVER.LATEST_CHECKPOINT_PERIOD == 0:
-                checkpoint_path = os.path.join(args.checkpoint_dir, 'checkpoint_latest.pth')
-                if comm.is_main_process():
-                    torch.save({
-                        'model': model_without_ddp.state_dict(),
-                        'model_config': export_model_config(cfg),
-                        'optimizer': optimizer.state_dict(),
-                        'step': total_steps,
-                        'epoch': epoch,
-                    }, checkpoint_path)
+                ckpt_path = os.path.join(args.checkpoint_dir, f"epoch_{epoch + 1:03d}.pth")
+                torch.save({
+                    'model': model_without_ddp.state_dict(),
+                    'model_config': export_model_config(cfg),
+                    'optimizer': optimizer.state_dict(),
+                    'step': total_steps,
+                    'epoch': epoch + 1,
+                    'val_metrics': results,
+                }, ckpt_path)
+                latest = os.path.join(args.checkpoint_dir, "checkpoint_latest.pth")
+                torch.save({
+                    'model': model_without_ddp.state_dict(),
+                    'model_config': export_model_config(cfg),
+                    'optimizer': optimizer.state_dict(),
+                    'step': total_steps,
+                    'epoch': epoch + 1,
+                }, latest)
+                logger.info(f"Saved checkpoint → {ckpt_path}")
+            model.train()
 
-            if cfg.TEST.EVAL_PERIOD > 0 and total_steps % cfg.TEST.EVAL_PERIOD == 0:
-                logger.info('Start validation')
-                result_dict = eval_disp(model, cfg)
-                if comm.is_main_process():
-                    wandb.log({f"val/{k}": v for k, v in result_dict.items()})
-
-                model.train()
-
-            if total_steps >= cfg.SOLVER.MAX_ITER:
-                logger.info('Training done')
-
-                return
-        
-        epoch += 1
+    if comm.is_main_process() and writer is not None:
+        writer.close()
+    logger.info('Training done')
 
 
 if __name__ == '__main__':

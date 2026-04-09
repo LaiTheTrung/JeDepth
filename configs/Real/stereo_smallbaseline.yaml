@@ -1,6 +1,6 @@
 ALGORITHM: "waft"
 WAFT:
-  MAX_DISP: 256
+  MAX_DISP: 800
   LOSS: ['mixlap_40']
   FEATURE_ENCODER:
     TYPE: "dav2"
@@ -21,10 +21,10 @@ DATASETS:
   TRAIN_CSV: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data/stereo-smallbaseline/train.csv"
   VAL_CSV: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data/stereo-smallbaseline/val.csv"
   ROOT: "/home/thetrung/Documents/CT_UAV/Obstacle_Avoidance_ws3/data"
-  CROP_SIZE: [384, 640]
+  CROP_SIZE: [480, 640]
   DIVIS_BY: 16
 DATALOADER:
-  NUM_WORKERS: 4
+  NUM_WORKERS: 16
 TEST:
   EVAL_EPOCH_PERIOD: 5
   TEST_IMAGES_DIR: "test_images"

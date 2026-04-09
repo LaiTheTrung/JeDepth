@@ -21,4 +21,5 @@ datasets*
 build/
 dist/
 kaggle/update_code/
+kaggle_*
 *.egg-info/

@@ -11,11 +11,11 @@
   "enable_internet": true,
   "keywords": [],
   "dataset_sources": [
-    "laithetrung/stereo-smallbaseline",
-    "laithetrung/jedepth-code"
+    "laithetrung/stereo-smallbaseline"
   ],
   "kernel_sources": [
-    "laithetrung/waft-utility"
+    "laithetrung/waft-utility",
+    "laithetrung/waft-repo"
   ],
   "competition_sources": [
     "nvidia-nemotron-model-reasoning-challenge"

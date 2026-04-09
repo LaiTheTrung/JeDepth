@@ -24,9 +24,12 @@ class VitIter(nn.Module):
         self.n_idx = (int)(math.log2(patch_size)) + 1
         self.idx = [(i + 1) * self.dpt_configs[model_name]['n_layers'] // self.n_idx - 1 for i in range(self.n_idx)]
         self.out_c = [(int)(self.dim * (2 ** (i - self.n_idx + 1))) for i in range(self.n_idx)]
+        # Cho phép tắt pretrained download (offline) qua env var WAFT_NO_PRETRAINED=1.
+        import os as _os
+        _pretrained = _os.environ.get("WAFT_NO_PRETRAINED", "0") != "1"
         vit = timm.create_model(
             self.dpt_configs[model_name]['encoder'],
-            pretrained=True
+            pretrained=_pretrained
         )
         if r is not None:
             self.blks = nn.ModuleList()

@@ -216,6 +216,14 @@ def main(args):
     criterion = build_criterion(cfg)
     device = torch.device("cuda")
 
+    # Init weights từ --ckpt (dùng cho training kernel offline để bỏ HF download)
+    if args.ckpt:
+        logger.info('Load init weights from --ckpt: %s' % args.ckpt)
+        ck = torch.load(args.ckpt, map_location='cpu', weights_only=False)
+        weights = ck['model'] if isinstance(ck, dict) and 'model' in ck else ck
+        missing, unexpected = model_without_ddp.load_state_dict(weights, strict=False)
+        logger.info(f"  loaded; missing={len(missing)} unexpected={len(unexpected)}")
+
     # resume checkpoints
     start_epoch = 0
     start_step = 0

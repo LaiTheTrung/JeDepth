@@ -1,0 +1,48 @@
+# FastFoundationStereo - Custom Training Config
+# Dung cho local training voi du lieu stereo custom
+
+# ===== Model Architecture =====
+corr_levels: 2
+corr_radius: 4
+hidden_dims: [128]
+max_disp: 416
+mixed_precision: true
+n_gru_layers: 1
+n_downsample: 2
+train_iters: 8
+valid_iters: 4
+optimize_build_volume: pytorch1
+vit_size: vitl
+normalize: true
+cv_group: 8
+volume_dim: 28
+low_memory: false
+slow_fast_gru: false
+FIND_UNUSED_PARAMETERS: true
+
+# ===== Pretrained =====
+# Path to pretrained model. Supports 3 formats:
+#   1. NVlabs serialized model (e.g. model_best_bp2_serialize.pth)
+#   2. State dict only (e.g. from another training run)
+#   3. Full checkpoint (with model_state_dict key)
+# Leave empty or remove to train from scratch.
+pretrained_model: "pretrained/23-36-37/model_best_bp2_serialize.pth"
+
+# ===== Training Hyperparameters =====
+epochs: 60
+batch_size: 1
+lr: 0.0002
+weight_decay: 0.0001
+grad_clip: 1.0
+lr_milestones: [30, 45]
+lr_gamma: 0.5
+warmup_epochs: 3
+
+# ===== Data =====
+train_csv: data/processed_data/train.csv
+val_csv: data/processed_data/val.csv
+data_root: data/processed_data
+crop_size: [256, 320]  # [H, W] random crop. 256x320 fits 6GB VRAM. Use [384, 512] for larger GPUs.
+
+# ===== Logging =====
+log_interval: 50

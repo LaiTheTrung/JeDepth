@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscamerarenderer.a CMakeFiles/arguscamerarenderer.dir/Composer.cpp.o CMakeFiles/arguscamerarenderer.dir/StreamConsumer.cpp.o
+/usr/bin/ranlib libarguscamerarenderer.a

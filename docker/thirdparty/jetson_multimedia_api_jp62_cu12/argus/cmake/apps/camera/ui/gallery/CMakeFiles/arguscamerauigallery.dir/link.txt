@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscamerauigallery.a CMakeFiles/arguscamerauigallery.dir/AppModuleGallery.cpp.o
+/usr/bin/ranlib libarguscamerauigallery.a

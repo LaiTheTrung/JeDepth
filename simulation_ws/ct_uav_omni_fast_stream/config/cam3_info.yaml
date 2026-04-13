@@ -1,0 +1,42 @@
+# Camera Information for: cam3
+# Generated at startup by DataRecorderNode
+# Timestamp: 1762151245757810206
+
+camera_name: "cam3"
+
+pose:
+  position:
+    x: -15.3699
+    y: 8.04104
+    z: -3.42473
+  orientation:
+    w: -0.0648418
+    x: 0.127149
+    y: 0.98966
+    z: 0.0141924
+
+fov_degrees: 220
+
+distortion_coefficients:
+  data: [0, 0, 0, 0, 0]
+
+cinemairsim:
+  focal_length_mm: -4.323966
+  field_of_view: "Current Field Of View:
+	Horizontal Field Of View: 0;
+	 Vertical Field Of View: 0"
+  filmback_settings: "Name: 16:9 Digital Film;
+	 Sensor Width: 23.76; 	 Sensor Height: 13.365
+	 Sensor Aspect Ratio: 1.77778"
+  lens_settings: "Name: Universal Zoom;
+	 MinFocalLength: 4; 	 MaxFocalLength: 1000
+	 Min FStop: 1.2; 	 Max Fstop: 22
+	 Diaphragm Blade Count: 7
+	 Minimum focus distance: 15"
+  focus_distance: 100000.000000
+  focus_aperture: 2.800000
+
+metadata:
+  vehicle_name: ""
+  host_ip: "10.42.0.244"
+  host_port: 41451

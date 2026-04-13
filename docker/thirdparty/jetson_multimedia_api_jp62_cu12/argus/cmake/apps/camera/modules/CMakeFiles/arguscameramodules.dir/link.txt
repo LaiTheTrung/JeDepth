@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscameramodules.a CMakeFiles/arguscameramodules.dir/tasks/Gallery.cpp.o CMakeFiles/arguscameramodules.dir/tasks/MultiExposure.cpp.o CMakeFiles/arguscameramodules.dir/tasks/MultiSession.cpp.o CMakeFiles/arguscameramodules.dir/tasks/StillCapture.cpp.o CMakeFiles/arguscameramodules.dir/tasks/VideoRecord.cpp.o CMakeFiles/arguscameramodules.dir/Dispatcher.cpp.o CMakeFiles/arguscameramodules.dir/EventThread.cpp.o CMakeFiles/arguscameramodules.dir/PerfTracker.cpp.o CMakeFiles/arguscameramodules.dir/XMLConfig.cpp.o
+/usr/bin/ranlib libarguscameramodules.a

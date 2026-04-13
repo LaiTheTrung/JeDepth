@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscamerauimultiexposure.a CMakeFiles/arguscamerauimultiexposure.dir/AppModuleMultiExposure.cpp.o
+/usr/bin/ranlib libarguscamerauimultiexposure.a

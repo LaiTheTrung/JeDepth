@@ -1,0 +1,9 @@
+recorded_bags/*
+scripts/*.mp4
+scripts/data_seg
+scripts/data_depth
+scripts/my_dataset
+scripts/data*
+scripts/*.rar
+.vscode
+scripts/utils/__pycache__/

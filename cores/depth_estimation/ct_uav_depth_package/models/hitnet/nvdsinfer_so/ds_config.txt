@@ -1,0 +1,26 @@
+[property]
+gpu-id=0
+model-engine-file=/workspace/src/ct_uav_depth_package/hitnet/models/hitnet_240x320_fp16_opt_level_d2slam.engine
+network-type=0
+process-mode=1
+gie-unique-id=1
+
+# HitNet output (disparity map)
+output-tensor-meta=1
+
+# Custom parser
+custom-lib-path=/workspace/src/ct_uav_depth_package/hitnet/nvdsinfer_so/nvdsinfer_custom_impl_hitnet.so
+parse-bbox-func-name=NvDsInferParseCustomHitnet
+
+# Input format; chỉnh theo ONNX/engine của bạn
+network-input-shape=1;2;H;W
+network-color-format=0
+
+batch-size=1
+
+# Nếu cần tối ưu:
+# workspace-size=1024
+# precision=1
+
+[class-attrs-all]
+pre-cluster-threshold=0.0

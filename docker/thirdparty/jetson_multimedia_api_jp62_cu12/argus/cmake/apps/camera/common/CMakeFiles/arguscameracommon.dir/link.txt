@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscameracommon.a CMakeFiles/arguscameracommon.dir/ConditionVariable.cpp.o CMakeFiles/arguscameracommon.dir/Mutex.cpp.o CMakeFiles/arguscameracommon.dir/Util.cpp.o CMakeFiles/arguscameracommon.dir/VideoPipeline.cpp.o
+/usr/bin/ranlib libarguscameracommon.a

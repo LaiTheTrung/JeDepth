@@ -1,0 +1,2 @@
+/usr/bin/ar qc libarguscamerauicapture.a CMakeFiles/arguscamerauicapture.dir/AppModuleCapture.cpp.o
+/usr/bin/ranlib libarguscamerauicapture.a

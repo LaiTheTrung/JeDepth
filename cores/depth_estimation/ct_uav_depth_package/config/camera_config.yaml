@@ -1,0 +1,127 @@
+# Quad Stereo Camera Depth Estimation Configuration
+
+# Model paths
+trt_engine_path: "src/ct_uav_depth_package/hitnet/models/hitnet_240x320_fp16_opt_level_d2slam.engine"
+
+# Image dimensions
+depth_width: 320                  # Output width for depth estimation
+depth_height: 240                 # Output height for depth estimation
+input_width: 640           # Input width per camera
+input_height: 640          # Input height per camera
+
+# Processing parameters
+fps: 10                    # Target frames per second
+pixel_step: 2              # Point cloud downsampling step (1 = no downsampling)
+min_z: 0.5                 # Minimum depth threshold (meters)
+max_z: 15.0                # Maximum depth threshold (meters)
+publish_pc: true           # Publish point cloud
+
+# Px4 Obstacle topic
+vertical_crop_deg: 20.0    # Field of View croped for collision avoidance algorithm
+
+
+# Stereo pair configurations
+# Đã cập nhật baseline theo POS_CM và extrinsic theo yaw (roll=pitch=0).
+# Q đang giả định:
+#   cx = 160, cy = 120, f ~ 320, baseline = 0.8 m -> 1/baseline = 1.25
+
+stereo_configs:
+  # Stereo pair 0: cam7 - cam0
+  # cam7: pos = ( 0.4, -0.4, 0), yaw =   0 deg  (left)
+  # cam0: pos = ( 0.4,  0.4, 0), yaw =   0 deg  (right)
+  - cam_idx_left: 7
+    cam_idx_right: 0
+    baseline:  # T_left->right
+      - [1.0, 0.0, 0.0, 0.0]   # Δx = 0.0
+      - [0.0, 1.0, 0.0, 0.8]   # Δy = 0.8
+      - [0.0, 0.0, 1.0, 0.0]
+      - [0.0, 0.0, 0.0, 1.0]
+    Q:
+      - [1.0, 0.0, 0.0, -160.0]
+      - [0.0, 1.0, 0.0, -120.0]
+      - [0.0, 0.0, 0.0, 320.0]
+      - [0.0, 0.0, 1.25, 0.0]
+    extrinsic:  # camera (cam7) -> world
+      # yaw = 0° -> R = I, pos = (0.4, -0.4, 0)
+      - [1.0, 0.0, 0.0,  0.4]
+      - [0.0, 1.0, 0.0, -0.4]
+      - [0.0, 0.0, 1.0,  0.0]
+      - [0.0, 0.0, 0.0,  1.0]
+
+  # Stereo pair 1: cam1 - cam2
+  # cam1: pos = ( 0.4,  0.4, 0), yaw =  90 deg  (left)
+  # cam2: pos = (-0.4,  0.4, 0), yaw =  90 deg  (right)
+  - cam_idx_left: 1
+    cam_idx_right: 2
+    baseline:  # T_left->right
+      - [1.0, 0.0, 0.0, -0.8]  # Δx = -0.8
+      - [0.0, 1.0, 0.0,  0.0]
+      - [0.0, 0.0, 1.0,  0.0]
+      - [0.0, 0.0, 0.0,  1.0]
+    Q:
+      - [1.0, 0.0, 0.0, -160.0]
+      - [0.0, 1.0, 0.0, -120.0]
+      - [0.0, 0.0, 0.0, 320.0]
+      - [0.0, 0.0, 1.25, 0.0]
+    extrinsic:  # camera (cam1) -> world
+      # yaw = 90°:
+      # Rz(90°) = [[0, -1, 0],
+      #            [1,  0, 0],
+      #            [0,  0, 1]]
+      # pos = (0.4, 0.4, 0)
+      - [0.0, -1.0, 0.0, 0.4]
+      - [1.0,  0.0, 0.0, 0.4]
+      - [0.0,  0.0, 1.0, 0.0]
+      - [0.0,  0.0, 0.0, 1.0]
+
+  # Stereo pair 2: cam3 - cam4
+  # cam3: pos = (-0.4,  0.4, 0), yaw = 180 deg  (left)
+  # cam4: pos = (-0.4, -0.4, 0), yaw = 180 deg  (right)
+  - cam_idx_left: 3
+    cam_idx_right: 4
+    baseline:  # T_left->right
+      - [1.0, 0.0, 0.0,  0.0]
+      - [0.0, 1.0, 0.0, -0.8]  # Δy = -0.8
+      - [0.0, 0.0, 1.0,  0.0]
+      - [0.0, 0.0, 0.0,  1.0]
+    Q:
+      - [1.0, 0.0, 0.0, -160.0]
+      - [0.0, 1.0, 0.0, -120.0]
+      - [0.0, 0.0, 0.0, 320.0]
+      - [0.0, 0.0, 1.25, 0.0]
+    extrinsic:  # camera (cam3) -> world
+      # yaw = 180°:
+      # Rz(180°) = [[-1,  0, 0],
+      #             [ 0, -1, 0],
+      #             [ 0,  0, 1]]
+      # pos = (-0.4, 0.4, 0)
+      - [-1.0,  0.0, 0.0, -0.4]
+      - [ 0.0, -1.0, 0.0,  0.4]
+      - [ 0.0,  0.0, 1.0,  0.0]
+      - [ 0.0,  0.0, 0.0,  1.0]
+
+  # Stereo pair 3: cam5 - cam6
+  # cam5: pos = (-0.4, -0.4, 0), yaw = 270 deg  (left)
+  # cam6: pos = ( 0.4, -0.4, 0), yaw = 270 deg  (right)
+  - cam_idx_left: 5
+    cam_idx_right: 6
+    baseline:  # T_left->right
+      - [1.0, 0.0, 0.0, 0.8]   # Δx = 0.8
+      - [0.0, 1.0, 0.0, 0.0]
+      - [0.0, 0.0, 1.0, 0.0]
+      - [0.0, 0.0, 0.0, 1.0]
+    Q:
+      - [1.0, 0.0, 0.0, -160.0]
+      - [0.0, 1.0, 0.0, -120.0]
+      - [0.0, 0.0, 0.0, 320.0]
+      - [0.0, 0.0, 1.25, 0.0]
+    extrinsic:  # camera (cam5) -> world
+      # yaw = 270° (hay -90°):
+      # Rz(270°) = [[ 0,  1, 0],
+      #             [-1,  0, 0],
+      #             [ 0,  0, 1]]
+      # pos = (-0.4, -0.4, 0)
+      - [ 0.0,  1.0, 0.0, -0.4]
+      - [-1.0,  0.0, 0.0, -0.4]
+      - [ 0.0,  0.0, 1.0,  0.0]
+      - [ 0.0,  0.0, 0.0,  1.0]

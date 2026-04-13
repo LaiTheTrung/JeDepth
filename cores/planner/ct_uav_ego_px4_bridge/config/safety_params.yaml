@@ -1,0 +1,57 @@
+# =============================================================================
+# SAFETY PARAMETERS — bridge_production.py
+# Tách riêng để tune mà không cần sửa code
+# =============================================================================
+
+bridge_production:
+  ros__parameters:
+    # --- DRONE CONFIG ---
+    drone_id: 0
+    takeoff_height: 0.5 # Chiều cao cất cánh (mét, ENU Up)
+    camera_offset_x: 0.1 # Khoảng cách camera so với tâm drone (mét)
+
+    # --- CAMERA INTRINSICS ---
+    # Phải khớp với output của stereo depth node
+    camera:
+      width: 256
+      height: 144
+      fx: 187.8
+      fy: 187.8
+      cx: 128.0
+      cy: 72.0
+
+    # --- LAUNCH MODE ---
+    # "ground"   : Node sẽ làm TAKEOFF sequence
+    # "inflight" : Node sẽ HOLD vị trí ngay khi switch Offboard
+    launch_mode: "ground"
+
+    # --- ALTITUDE THRESHOLD ---
+    # Nếu alt < ground_altitude_threshold → ground launch (TAKEOFF)
+    # Nếu alt >= threshold → in-air launch (INAIR_HOLD)
+    ground_altitude_threshold: 0.5 # mét
+
+    # --- MAP WARMUP ---
+    # Số depth frame cần nhận trước khi accept goal
+    # 20Hz × 20 frames = 1 giây warmup  (tăng lên 40 khi production)
+    map_warmup_frames: 20
+
+    # --- WATCHDOG ---
+    # Nếu Ego Planner không gửi cmd trong vòng N giây → WATCHDOG_HOLD
+    watchdog_timeout_sec: 0.5
+
+    # --- STABILIZE HOLD ---
+    # Sau takeoff, hold ổn định N giây trước khi vào MAP_WARMING
+    stabilize_hold_sec: 2.0   # (tăng lên 3.0 khi production)
+
+    # --- IN-AIR HOLD ---
+    # Sau khi switch Offboard khi đang bay, hold ổn định N giây
+    inair_hold_sec: 2.0
+
+    # --- GEOFENCE (ENU, tương đối so với origin) ---
+    geofence_xy: 30.0 # Giới hạn XY (mét)
+    geofence_z_max: 5.0 # Giới hạn độ cao tối đa (mét)
+    geofence_z_min: 0.3 # Giới hạn độ cao tối thiểu (mét)
+
+    # --- DEPTH FILTER ---
+    depth_filter_min: 0.45 # Lọc điểm quá gần (mét)
+    depth_filter_max: 8.0 # Lọc điểm quá xa (mét)

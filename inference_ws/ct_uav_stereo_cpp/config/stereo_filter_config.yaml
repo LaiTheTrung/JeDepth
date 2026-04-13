@@ -1,0 +1,18 @@
+depth_filter:
+	speckle:
+		enabled: true
+		max_speckle_size: 100
+		max_depth_difference: 0.08
+		connectivity: 8
+	brightness:
+		enabled: true
+		min_brightness: 20
+		max_brightness: 235
+	spatial:
+		enabled: true
+		alpha: 0.5
+		delta: 0.08
+		iterations: 2
+		hole_filling_radius: 2
+
+      

@@ -27,9 +27,8 @@ download () {
 # =========================
 # Download files
 # =========================
+download "1DfbGptQ0IP4gHK5Qv56DgYSZu0zfhLQn" "model_best_bp2_serialize.pth"
 
-download "1W1V1H64l9bAi97boEQQ2ueNzzGmSMz-E" "model_best_bp2_serialize.pth"
-
-download "1GDBRYL-ZaLpXEtWfGFRJvkBc_2sywjgj" "cfg.yaml"
+download "1SjIlCdbcPbIi-N4IOL17JTEk3E83Dxb1" "cfg.yaml"
 
 echo "=== Done all downloads ==="

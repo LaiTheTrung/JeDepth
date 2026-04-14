@@ -35,6 +35,10 @@ from jedepth.utils.utils import vis_disparity, set_seed, set_logging_format
 
 logger = logging.getLogger(__name__)
 
+# Utility packages (pre-installed from jedepth-utility-script kernel)
+UTILITY_PATH = "/kaggle/input/notebooks/laithetrung/hitnet-utility-script"
+if os.path.exists(UTILITY_PATH):
+    sys.path.insert(0, UTILITY_PATH)
 
 # ============================================================================
 # Config & CLI

@@ -7,6 +7,13 @@ Usage:
 """
 
 import os
+
+# Auto-disable torch.compile on Kaggle (Triton ptxas binary on /kaggle/input is
+# mounted without execute permissions). Can be overridden by exporting
+# TORCH_COMPILE_DISABLE=0 explicitly.
+if os.path.exists('/kaggle/input') and 'TORCH_COMPILE_DISABLE' not in os.environ:
+    os.environ['TORCH_COMPILE_DISABLE'] = '1'
+
 import sys
 import logging
 import csv

@@ -38,7 +38,11 @@ class Feature(nn.Module):
     def __init__(self, args):
         super(Feature, self).__init__()
         self.args = args
-        model = timm.create_model('edgenext_small', pretrained=True, features_only=False)
+        # Backbone pretrained từ timm requires internet access (e.g. on Kaggle
+        # training kernel this is blocked). Set cfg.backbone_pretrained=false
+        # to disable the download. Default False for offline safety.
+        backbone_pretrained = bool(args.get('backbone_pretrained', False))
+        model = timm.create_model('edgenext_small', pretrained=backbone_pretrained, features_only=False)
         self.stem = model.stem
         self.stages = model.stages
         chans = [48, 96, 160, 304]

@@ -20,6 +20,10 @@ low_memory: false
 slow_fast_gru: false
 FIND_UNUSED_PARAMETERS: true
 
+# Download EdgeNeXt-Small backbone weights from timm/HuggingFace (requires internet).
+# Set false on offline environments (e.g. Kaggle training kernel).
+backbone_pretrained: true
+
 # ===== Pretrained =====
 # Path to pretrained model. Supports 3 formats:
 #   1. NVlabs serialized model (e.g. model_best_bp2_serialize.pth)
